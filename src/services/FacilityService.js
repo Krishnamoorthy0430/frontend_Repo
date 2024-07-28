@@ -1,88 +1,164 @@
 import axios from "axios";
 import AuthService from "./AuthService";
 
-class FacilityService
-{
-    URL = "http://localhost:8080/v1/facility"
+class FacilityService {
+    URL = "http://localhost:8080/v1/facility";
 
     constructor() {
-        this.token = AuthService.getToken();
+        this.user = AuthService.getCurrentUser();
+        this.token = this.user ? this.user.jwt : null;
+        this.role = this.user ? this.user.role : null;
+
         if (!this.token) {
             console.error('No token found');
-            // You can handle the absence of a token here as needed.
         } else {
-            console.log('Token found : ', this.token); // Log the token for debugging
+            if (this.role === 'Manager') {
+                console.log('Manager Token found : ', this.token);
+            } else if (this.role === 'Resident') {
+                console.log('Resident Token found : ', this.token);
+            }
         }
     }
 
-    fnCreateFacility(facility)
-    {
+    fnCreateFacility(facility) {
+        if (this.role === 'Manager') {
+            console.error("Only a Resident can create a facility");
+            return Promise.reject("Unauthorized");
+        } else if (this.role === 'Resident') {
+            return axios.post(this.URL, facility, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+        }
+    }
+
+    fnUpdateFacility(id, facility) {
         if (!this.token) {
             console.error('No token found');
             return Promise.reject('No token found');
         }
         
-        return axios.post(this.URL, facility, {
+        return axios.put(`${this.URL}/${id}`, facility, {
             headers: {
                 'Authorization': `Bearer ${this.token}`
             }
         });
     }
 
-    fnUpdateFacility(id, facility)
-    {
+    gnGetAllFacilities() {
         if (!this.token) {
             console.error('No token found');
             return Promise.reject('No token found');
         }
         
-        return axios.put(this.URL+"/"+id, facility, {
+        return axios.get(`${this.URL}/getall`, {
             headers: {
                 'Authorization': `Bearer ${this.token}`
             }
         });
     }
 
-    gnGetAllFacilities()
-    {
+    fnGetFacilityById(id) {
         if (!this.token) {
             console.error('No token found');
             return Promise.reject('No token found');
         }
         
-        return axios.get(this.URL+"/getall", {
+        return axios.get(`${this.URL}/byid/${id}`, {
             headers: {
                 'Authorization': `Bearer ${this.token}`
             }
         });
     }
 
-    fnGetFacilityById(id)
-    {
+    fnDeleteFacility(id) {
         if (!this.token) {
             console.error('No token found');
             return Promise.reject('No token found');
         }
         
-        return axios.get(this.URL+"/byid/"+id, {
-            headers: {
-                'Authorization': `Bearer ${this.token}`
-            }
-        });
-    }
-
-    fnDeleteFacility(id)
-    {
-        if (!this.token) {
-            console.error('No token found');
-            return Promise.reject('No token found');
-        }
-        
-        return axios.delete(this.URL+"/"+id, {
+        return axios.delete(`${this.URL}/${id}`, {
             headers: {
                 'Authorization': `Bearer ${this.token}`
             }
         });
     }
 }
+
 export default new FacilityService();
+
+
+//     constructor() {
+//         this.managerToken = localStorage.getItem('managerToken');
+//         this.residentToken = localStorage.getItem('residentToken');
+//         this.role = AuthService.getRole();
+//         this.user = AuthService.getCurrentUser();
+        
+
+//         if (!this.managerToken && !this.residentToken) {
+//             console.error('No token found');
+//             // Handle the absence of a token as needed.
+//         } else if(this.user === 'Manager')
+//         {
+//             console.log('Manager Token found : ', this.managerToken);
+//         }  if(this.user === 'Resident')
+//         {
+//             console.log('Resident Token found : ', this.residentToken);
+//         }
+//     }
+
+//     fnCreateFacility(facility)
+//     {
+//         console.log(this.user);
+//         if (this.user === 'Manager') {
+//             return axios.post(this.URL, facility, {
+//                 headers: {
+//                     'Authorization': `Bearer ${this.managerToken}`
+//                 }
+//             });
+//         } else {
+//             console.error("You do not have authorization to create a facility");
+//             return Promise.reject("Unauthorized");
+//         }
+//     }
+
+//     fnUpdateFacility(id, facility)
+//     {
+        
+//         return axios.put(this.URL+"/"+id, facility, {
+//             headers: {
+//                 'Authorization': `Bearer ${this.managerToken}`
+//             }
+//         });
+//     }
+
+//     gnGetAllFacilities()
+//     {
+//         return axios.get(this.URL+"/getall", {
+//             headers: {
+//                 'Authorization': `Bearer ${this.managerToken || this.residentToken}`
+//             }
+//         });
+//     }
+
+//     fnGetFacilityById(id)
+//     {
+//         return axios.get(this.URL+"/byid/"+id, {
+//             headers: {
+//                 'Authorization': `Bearer ${this.managerToken || this.residentToken}`
+//             }
+//         });
+//     }
+
+//     fnDeleteFacility(id)
+//     {
+//         return axios.delete(this.URL+"/"+id, {
+//             headers: {
+//                 'Authorization': `Bearer ${this.managerToken}`
+//             }
+//         });
+//     }
+// }
+
+// export default new FacilityService();
